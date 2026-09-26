@@ -1,83 +1,148 @@
--- FTAP V54 RAYFIELD ANTI 404 - FINAL
-repeat task.wait() until game:IsLoaded()
-
-local Rayfield
-local urls = {
-    "https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua",
-    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source",
-    "https://sirius.menu/rayfield"
-}
-
-for _,url in ipairs(urls) do
-    local ok, res = pcall(function() return game:HttpGet(url) end)
-    if ok and res and #res > 1000 then
-        local ok2, lib = pcall(function() return loadstring(res)() end)
-        if ok2 and lib then Rayfield = lib break end
-    end
-end
-
-if not Rayfield then
-    warn("Rayfield 404 semua, cek koneksi/Http di Delta lu aktif gak")
-    return
-end
-
-local Window = Rayfield:CreateWindow({
-   Name = "FTAP V54 Rayfield FIX",
-   LoadingTitle = "Loaded",
-   ConfigurationSaving = { Enabled = false }
-})
-
-local T1 = Window:CreateTab("Ngumpet Tanah", 4483362458)
-local T2 = Window:CreateTab("Curang", 6031091002)
-
-local plr = game.Players.LocalPlayer
-local Run = game:GetService("RunService")
+local LP = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local WS = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local oldPos, noclip, antifling, fly, bv, bg, con = nil, false, false, false, nil, nil, nil
 
-T1:CreateButton({Name="MASUK TANAH", Callback=function()
-    local hrp = plr.Character.HumanoidRootPart
-    oldPos = hrp.CFrame
-    plr.Character.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-    for _,v in pairs(plr.Character:GetDescendants()) do if v:IsA("BasePart") and v.Name~="HumanoidRootPart" then v.Transparency=1 end end
-    plr.Character.Humanoid.HipHeight=-12
-    if con then con:Disconnect() end
-    con=Run.Heartbeat:Connect(function() if hrp and oldPos then hrp.CFrame=CFrame.new(hrp.Position.X, oldPos.Position.Y-11, hrp.Position.Z) hrp.Velocity=Vector3.new(0,0,0) end end)
-end})
+_G.AutoCollect = false
+_G.AutoKickBlock = false
+_G.AutoSafeZone = false
+_G.GodMode = false
+_G.UIHidden = false
+_G.SafeZonePos = nil
+_G.IsMovingManual = false
 
-T1:CreateButton({Name="KELUAR TANAH", Callback=function()
-    if con then con:Disconnect() con=nil end
-    for _,v in pairs(plr.Character:GetDescendants()) do if v:IsA("BasePart") then v.Transparency=0 end end
-    plr.Character.Humanoid.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.Viewer
-    plr.Character.Humanoid.HipHeight=0
-    if oldPos then plr.Character.HumanoidRootPart.CFrame=oldPos+Vector3.new(0,5,0) end
-end})
+local radius = 1000
+local collectSpeed = 0.15
+local kickSpeed = 0.1
 
-T1:CreateSlider({Name="Kedalaman 5-20", Range={5,20}, Increment=1, CurrentValue=11, Callback=function(V)
-    local hrp=plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if hrp and oldPos then hrp.CFrame=CFrame.new(hrp.Position.X, oldPos.Position.Y-V, hrp.Position.Z) end
-end})
+-- Fungsi stop gerak
+local function StopMove()
+	if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+	LP.Character.Humanoid:MoveTo(LP.Character.HumanoidRootPart.Position)
+	LP.Character.Humanoid.WalkSpeed = 16 -- reset speed
+	end
+end
 
-T2:CreateSlider({Name="Hitbox 3-20", Range={3,20}, Increment=1, CurrentValue=3, Callback=function(S)
-    for _,p in pairs(game.Players:GetPlayers()) do if p~=plr and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Size=Vector3.new(S,S,S) p.Character.HumanoidRootPart.Transparency=0.6 end end
-end})
+-- Deteksi gerak manual
+UIS.InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or 
+	   input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
+	_G.IsMovingManual = true
+	end
+end)
 
-T2:CreateButton({Name="RESET HITBOX", Callback=function()
-    for _,p in pairs(game.Players:GetPlayers()) do if p~=plr and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Size=Vector3.new(2,2,1) p.Character.HumanoidRootPart.Transparency=1 end end
-    Rayfield:Notify({Title="Hitbox", Content="Reset Normal", Duration=2})
-end})
+UIS.InputEnded:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or 
+	   input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
+	_G.IsMovingManual = false
+	end
+end)
 
-T2:CreateToggle({Name="Anti Fling V2", CurrentValue=false, Flag="AF", Callback=function(V) antifling=V end})
-T2:CreateToggle({Name="Noclip", CurrentValue=false, Flag="NC", Callback=function(V) noclip=V end})
-T2:CreateToggle({Name="Fly", CurrentValue=false, Flag="Fly", Callback=function(V)
-    fly=V local hrp=plr.Character.HumanoidRootPart
-    if V then bg=Instance.new("BodyGyro",hrp) bg.P=90000 bg.MaxTorque=Vector3.new(9e9,9e9,9e9) bv=Instance.new("BodyVelocity",hrp) bv.MaxForce=Vector3.new(9e9,9e9,9e9) bv.Velocity=Vector3.new(0,0,0)
-    else if bg then bg:Destroy() bg=nil end if bv then bv:Destroy() bv=nil end end
-end})
-T2:CreateSlider({Name="Speed 100-150", Range={100,150}, Increment=5, CurrentValue=100, Callback=function(S) plr.Character.Humanoid.WalkSpeed=S end})
-T2:CreateButton({Name="Reset Speed 16", Callback=function() plr.Character.Humanoid.WalkSpeed=16 end})
+-- Remotes
+pcall(function()
+	rev_B_Collect = ReplicatedStorage:WaitForChild("Shared", 5):WaitForChild("Packages", 5):WaitForChild("Network", 5):WaitForChild("rev_B_Collect", 5)
+	rev_KickEvent = ReplicatedStorage:WaitForChild("Shared", 5):WaitForChild("Packages", 5):WaitForChild("Network", 5):WaitForChild("rev_KickEvent", 5)
+end)
 
-Run.Stepped:Connect(function() if noclip or antifling then for _,v in pairs(plr.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide=false v.Velocity=Vector3.new(0,0,0) end end end end)
-Run.Heartbeat:Connect(function() if fly and bv and bg then local cam=workspace.CurrentCamera.CFrame bg.CFrame=cam local m=Vector3.new(0,0,0) if UIS:IsKeyDown(Enum.KeyCode.W) then m=m+cam.LookVector end if UIS:IsKeyDown(Enum.KeyCode.S) then m=m-cam.LookVector end bv.Velocity=m*60 end end)
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "JeraHubUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = gethui and gethui() or game:GetService("CoreGui")
 
-Rayfield:Notify({Title="V54 Rayfield", Content="Loaded Anti 404", Duration=3})
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 240)
+frame.Position = UDim2.new(0, 15, 0, 120)
+frame.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+frame.BorderColor3 = Color3.fromRGB(23, 23, 23)
+frame.BorderSizePixel = 1
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -35, 0, 28)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "script by Jera hub"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 15
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+local hideBtn = Instance.new("TextButton")
+hideBtn.Size = UDim2.new(0, 25, 0, 25)
+hideBtn.Position = UDim2.new(1, -30, 0, 6)
+hideBtn.Text = "-"
+hideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+hideBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+hideBtn.Font = Enum.Font.GothamBold
+hideBtn.TextSize = 18
+hideBtn.Parent = frame
+Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(0, 4)
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -20, 0, 200)
+contentFrame.Position = UDim2.new(0, 10, 0, 40)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = frame
+
+local uiList = Instance.new("UIListLayout")
+uiList.Padding = UDim.new(0, 5)
+uiList.Parent = contentFrame
+
+local function createBtn(text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 30)
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 14
+	btn.Parent = contentFrame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+	return btn
+end
+
+local toggleBtn = createBtn("Auto Collect 1-30: OFF")
+toggleBtn.MouseButton1Click:Connect(function()
+	_G.AutoCollect = not _G.AutoCollect
+	toggleBtn.Text = "Auto Collect 1-30: " .. (_G.AutoCollect and "ON" or "OFF")
+	toggleBtn.BackgroundColor3 = _G.AutoCollect and Color3.fromRGB(0, 170, 85) or Color3.fromRGB(60, 60, 60)
+end)
+
+local kickBtn = createBtn("Auto Tendang Block: OFF")
+kickBtn.MouseButton1Click:Connect(function()
+	_G.AutoKickBlock = not _G.AutoKickBlock
+	kickBtn.Text = "Auto Tendang Block: " .. (_G.AutoKickBlock and "ON" or "OFF")
+	kickBtn.BackgroundColor3 = _G.AutoKickBlock and Color3.fromRGB(0, 170, 85) or Color3.fromRGB(60, 60, 60)
+end)
+
+local setSafeBtn = createBtn("Set Safe Zone")
+setSafeBtn.MouseButton1Click:Connect(function()
+	local char = LP.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+	_G.SafeZonePos = char.HumanoidRootPart.Position
+		setSafeBtn.Text = "Safe Zone Set ✓"
+		task.wait(1)
+		setSafeBtn.Text = "Set Safe Zone"
+	end
+end)
+
+local safeBtn = createBtn("Auto Jalan ke Safe Zone: OFF")
+safeBtn.MouseButton1Click:Connect(function()
+	_G.AutoSafeZone = not _G.AutoSafeZone
+	safeBtn.Text = "Auto Jalan ke Safe Zone: " .. (_G.AutoSafeZone and "ON" or "OFF")
+	safeBtn.BackgroundColor3 = _G.AutoSafeZone and Color3.fromRGB(0, 170, 85) or Color3.fromRGB(60, 60, 60)
+	
+	if not _G.AutoSafeZone then
+	StopMove() -- STOP GERAK PAS DIMATIIN
+	end
+end)
+
+local godBtn = createBtn("God Mode Anti Mati: OFF")
+godBtn.MouseBu
