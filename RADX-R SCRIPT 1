@@ -1,0 +1,539 @@
+--// RADXGEM V6 ULTRA PREMIUM
+--// LocalScript
+--// UI demo for your own Roblox game
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "RADXGEM_V6"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 100
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local C = {
+    bg = Color3.fromRGB(4, 10, 24),
+    panel = Color3.fromRGB(8, 22, 42),
+    panel2 = Color3.fromRGB(12, 31, 57),
+    blue = Color3.fromRGB(0, 135, 255),
+    light = Color3.fromRGB(85, 180, 255),
+    white = Color3.fromRGB(230, 242, 255),
+    muted = Color3.fromRGB(130, 165, 205)
+}
+
+-- State Fitur
+local FeatureStates = {
+    AntiAFK = false,
+    AntiFling = false,
+    KillAura = false,
+    BypassAntiHeal = false,
+    DeathTeleport = true
+}
+
+local playerLives = 100
+local lastDeathCFrame = nil
+
+local function round(obj, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = obj
+end
+
+local function outline(obj, color, transparency)
+    local s = Instance.new("UIStroke")
+    s.Color = color or C.blue
+    s.Transparency = transparency or 0.25
+    s.Thickness = 1
+    s.Parent = obj
+end
+
+local function tween(obj, properties, duration)
+    local t = TweenService:Create(
+        obj,
+        TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quart,
+            Enum.EasingDirection.Out),
+        properties
+    )
+    t:Play()
+    return t
+end
+
+-- Sistem Dragging
+local function draggable(object, handle)
+    local dragging = false
+    local startPosition
+    local startPoint
+    local activeTouch
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            startPosition = object.Position
+            startPoint = input.Position
+            if input.UserInputType == Enum.UserInputType.Touch then
+                activeTouch = input
+            end
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if not dragging then return end
+
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input == activeTouch then
+            local delta = input.Position - startPoint
+            object.Position = UDim2.new(
+                startPosition.X.Scale,
+                startPosition.X.Offset + delta.X,
+                startPosition.Y.Scale,
+                startPosition.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            activeTouch = nil
+        end
+    end)
+end
+
+-- Main Window
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(530, 330)
+main.Position = UDim2.new(0.5, -265, 0.5, -165)
+main.BackgroundColor3 = C.bg
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = gui
+round(main, 18)
+outline(main, C.blue, 0.05)
+
+local size = Instance.new("UIScale")
+size.Scale = 1
+size.Parent = main
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 65)
+header.BackgroundColor3 = Color3.fromRGB(5, 17, 38)
+header.BorderSizePixel = 0
+header.Parent = main
+
+local logo = Instance.new("TextLabel")
+logo.Size = UDim2.fromOffset(48, 48)
+logo.Position = UDim2.fromOffset(12, 8)
+logo.BackgroundColor3 = C.panel2
+logo.Text = "R"
+logo.TextColor3 = C.blue
+logo.TextSize = 35
+logo.Font = Enum.Font.GothamBlack
+logo.Parent = header
+round(logo, 14)
+outline(logo)
+
+local title = Instance.new("TextLabel")
+title.Position = UDim2.fromOffset(70, 9)
+title.Size = UDim2.fromOffset(240, 28)
+title.BackgroundTransparency = 1
+title.Text = "RADXGEM"
+title.TextColor3 = C.white
+title.TextSize = 21
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+local version = Instance.new("TextLabel")
+version.Position = UDim2.fromOffset(175, 13)
+version.Size = UDim2.fromOffset(43, 20)
+version.BackgroundColor3 = C.panel2
+version.Text = "V6"
+version.TextColor3 = C.light
+version.TextSize = 11
+version.Font = Enum.Font.GothamBold
+version.Parent = header
+round(version, 6)
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Position = UDim2.fromOffset(72, 37)
+subtitle.Size = UDim2.fromOffset(160, 16)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "PLAY SMARTER"
+subtitle.TextColor3 = C.muted
+subtitle.TextSize = 10
+subtitle.Font = Enum.Font.Gotham
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
+subtitle.Parent = header
+
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.fromOffset(34, 34)
+minimize.Position = UDim2.new(1, -82, 0, 15)
+minimize.BackgroundColor3 = C.panel2
+minimize.Text = "−"
+minimize.TextColor3 = C.white
+minimize.TextSize = 24
+minimize.Font = Enum.Font.GothamBold
+minimize.Parent = header
+round(minimize, 10)
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(34, 34)
+close.Position = UDim2.new(1, -42, 0, 15)
+close.BackgroundColor3 = C.panel2
+close.Text = "×"
+close.TextColor3 = C.white
+close.TextSize = 22
+close.Font = Enum.Font.GothamBold
+close.Parent = header
+round(close, 10)
+
+draggable(main, header)
+
+-- Sidebar
+local sidebar = Instance.new("Frame")
+sidebar.Position = UDim2.fromOffset(10, 75)
+sidebar.Size = UDim2.fromOffset(150, 245)
+sidebar.BackgroundColor3 = C.panel
+sidebar.Parent = main
+round(sidebar, 13)
+
+local content = Instance.new("Frame")
+content.Position = UDim2.fromOffset(170, 75)
+content.Size = UDim2.new(1, -180, 1, -85)
+content.BackgroundTransparency = 1
+content.Parent = main
+
+-- Hanya 2 Tab: Main & Settings
+local tabs = {
+    {"⌂", "Main"},
+    {"⚙", "Settings"}
+}
+
+local pages = {}
+local buttons = {}
+
+for index, tab in ipairs(tabs) do
+    local page = Instance.new("ScrollingFrame")
+    page.Name = tab[2]
+    page.Size = UDim2.fromScale(1, 1)
+    page.BackgroundTransparency = 1
+    page.BorderSizePixel = 0
+    page.ScrollBarThickness = 3
+    page.ScrollBarImageColor3 = C.blue
+    page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    page.Visible = false
+    page.Parent = content
+
+    local list = Instance.new("UIListLayout")
+    list.Padding = UDim.new(0, 8)
+    list.Parent = page
+
+    list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        page.CanvasSize = UDim2.fromOffset(0, list.AbsoluteContentSize.Y + 10)
+    end)
+
+    pages[tab[2]] = page
+
+    local button = Instance.new("TextButton")
+    button.Name = tab[2]
+    button.Size = UDim2.new(1, -12, 0, 34)
+    button.Position = UDim2.fromOffset(6, 7 + ((index - 1) * 38))
+    button.BackgroundColor3 = C.panel
+    button.Text = tab[1] .. "    " .. tab[2]
+    button.TextColor3 = C.white
+    button.TextSize = 12
+    button.Font = Enum.Font.GothamSemibold
+    button.Parent = sidebar
+    round(button, 9)
+    buttons[tab[2]] = button
+end
+
+local function heading(parent, name, description)
+    local box = Instance.new("Frame")
+    box.Size = UDim2.new(1, -5, 0, 54)
+    box.BackgroundColor3 = C.panel2
+    box.Parent = parent
+    round(box, 11)
+
+    local label = Instance.new("TextLabel")
+    label.Position = UDim2.fromOffset(12, 6)
+    label.Size = UDim2.new(1, -20, 0, 22)
+    label.BackgroundTransparency = 1
+    label.Text = "◆  " .. name
+    label.TextColor3 = C.white
+    label.TextSize = 15
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = box
+
+    local desc = Instance.new("TextLabel")
+    desc.Position = UDim2.fromOffset(13, 29)
+    desc.Size = UDim2.new(1, -20, 0, 17)
+    desc.BackgroundTransparency = 1
+    desc.Text = description
+    desc.TextColor3 = C.muted
+    desc.TextSize = 10
+    desc.Font = Enum.Font.Gotham
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = box
+end
+
+local function addToggle(parent, name, description, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, -5, 0, 53)
+    row.BackgroundColor3 = C.panel
+    row.Parent = parent
+    round(row, 11)
+    outline(row, C.blue, 0.8)
+
+    local label = Instance.new("TextLabel")
+    label.Position = UDim2.fromOffset(13, 7)
+    label.Size = UDim2.new(1, -75, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = C.white
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    local desc = Instance.new("TextLabel")
+    desc.Position = UDim2.fromOffset(13, 29)
+    desc.Size = UDim2.new(1, -75, 0, 15)
+    desc.BackgroundTransparency = 1
+    desc.Text = description or "Visual interface demo"
+    desc.TextColor3 = C.muted
+    desc.TextSize = 10
+    desc.Font = Enum.Font.Gotham
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = row
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.fromOffset(42, 23)
+    toggle.Position = UDim2.new(1, -54, 0.5, -11)
+    toggle.BackgroundColor3 = Color3.fromRGB(38, 54, 79)
+    toggle.Text = ""
+    toggle.Parent = row
+    round(toggle, 20)
+
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.fromOffset(17, 17)
+    dot.Position = UDim2.fromOffset(3, 3)
+    dot.BackgroundColor3 = C.white
+    dot.Parent = toggle
+    round(dot, 20)
+
+    local active = false
+
+    toggle.MouseButton1Click:Connect(function()
+        active = not active
+
+        tween(toggle, {
+            BackgroundColor3 = active and C.blue or Color3.fromRGB(38, 54, 79)
+        })
+
+        tween(dot, {
+            Position = active and UDim2.fromOffset(22, 3) or UDim2.fromOffset(3, 3)
+        })
+
+        if callback then
+            callback(active)
+        end
+    end)
+end
+
+-- Opsi khusus 2 Tab: Main & Settings
+local options = {
+    Main = {
+        {"Kill Aura NPC V6", "Otomatis serang NPC terdekat", function(state) FeatureStates.KillAura = state end},
+        {"Bypass Anti-Heal NPC", "Cegah NPC memulihkan darah saat mati", function(state) FeatureStates.BypassAntiHeal = state end},
+        {"Respawn di Tempat Mati", "Pindah ke posisi mati, bukan lobby", function(state) FeatureStates.DeathTeleport = state end}
+    },
+    Settings = {
+        {"Anti AFK V6", "Mencegah kick otomatis saat AFK", function(state) FeatureStates.AntiAFK = state end},
+        {"Anti Fling V6", "Mencegah karakter terlempar pemain lain", function(state) FeatureStates.AntiFling = state end}
+    }
+}
+
+for name, items in pairs(options) do
+    if pages[name] then
+        heading(pages[name], name, "RADXGEM V6  •  ULTRA PREMIUM")
+
+        for _, item in ipairs(items) do
+            addToggle(pages[name], item[1], item[2], item[3])
+        end
+    end
+end
+
+local function selectTab(name)
+    for tabName, page in pairs(pages) do
+        page.Visible = tabName == name
+        if buttons[tabName] then
+            tween(buttons[tabName], {
+                BackgroundColor3 = tabName == name and C.blue or C.panel
+            }, 0.15)
+        end
+    end
+end
+
+for name, button in pairs(buttons) do
+    button.MouseButton1Click:Connect(function()
+        selectTab(name)
+    end)
+end
+
+selectTab("Main")
+
+-- Status footer
+local footer = Instance.new("Frame")
+footer.Position = UDim2.new(0, 170, 1, -43)
+footer.Size = UDim2.new(1, -180, 0, 32)
+footer.BackgroundColor3 = C.panel2
+footer.Parent = main
+round(footer, 9)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -12, 1, 0)
+status.Position = UDim2.fromOffset(8, 0)
+status.BackgroundTransparency = 1
+status.Text = "●  RADXGEM V6     |     Sisa Nyawa: " .. playerLives
+status.TextColor3 = C.light
+status.TextSize = 11
+status.Font = Enum.Font.GothamSemibold
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = footer
+
+-- Mini reopen button
+local mini = Instance.new("TextButton")
+mini.Size = UDim2.fromOffset(125, 32)
+mini.Position = UDim2.new(1, -140, 0, 100)
+mini.BackgroundColor3 = C.bg
+mini.Text = "◈  RADX-R MENU  ›"
+mini.TextColor3 = C.white
+mini.TextSize = 11
+mini.Font = Enum.Font.GothamBold
+mini.Visible = false
+mini.Parent = gui
+round(mini, 18)
+outline(mini)
+
+draggable(mini, mini)
+
+local function hideUI()
+    tween(main, { Size = UDim2.fromOffset(0, 0) }, 0.18)
+    task.wait(0.18)
+    main.Visible = false
+    main.Size = UDim2.fromOffset(530, 330)
+    mini.Visible = true
+end
+
+local function showUI()
+    main.Visible = true
+    main.Size = UDim2.fromOffset(0, 0)
+    tween(main, { Size = UDim2.fromOffset(530, 330) }, 0.2)
+    mini.Visible = false
+end
+
+close.MouseButton1Click:Connect(hideUI)
+minimize.MouseButton1Click:Connect(hideUI)
+mini.MouseButton1Click:Connect(showUI)
+
+-- LOGIKA FITUR SISTEM
+
+-- 1. Anti-AFK
+local bb = game:GetService("VirtualUser")
+player.Idled:Connect(function()
+    if FeatureStates.AntiAFK then
+        bb:CaptureController()
+        bb:ClickButton2(Vector2.new())
+    end
+end)
+
+-- 2. Anti-Fling V6
+RunService.Stepped:Connect(function()
+    if FeatureStates.AntiFling then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                for _, part in ipairs(p.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 3. Kill Aura NPC V6 + Bypass Anti-Heal NPC
+task.spawn(function()
+    while task.wait(0.1) do
+        if FeatureStates.KillAura and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local root = player.Character.HumanoidRootPart
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Humanoid") and not Players:GetPlayerFromCharacter(obj.Parent) then
+                    local npcRoot = obj.Parent:FindFirstChild("HumanoidRootPart") or obj.Parent:FindFirstChild("Head")
+                    if npcRoot and (npcRoot.Position - root.Position).Magnitude < 20 then
+                        obj:TakeDamage(15)
+                        
+                        -- Bypass Anti-Heal NPC
+                        if FeatureStates.BypassAntiHeal then
+                            obj.Health = math.min(obj.Health, obj.Health)
+                            obj:GetPropertyChangedSignal("Health"):Connect(function()
+                                if FeatureStates.BypassAntiHeal and obj.Health > 0 then
+                                    obj.Health = 0
+                                end
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 4. Sistem Nyawa + Respawn Teleport
+local function setupCharacter(char)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then
+        hum.Died:Connect(function()
+            if char:FindFirstChild("HumanoidRootPart") then
+                lastDeathCFrame = char.HumanoidRootPart.CFrame
+            end
+            
+            playerLives = playerLives - 1
+            status.Text = "●  RADXGEM V6     |     Sisa Nyawa: " .. playerLives
+            
+            -- Kirim Notifikasi Sistem
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "RADXGEM V6 Status",
+                    Text = "Kamu mati! Sisa nyawa: " .. playerLives,
+                    Duration = 4
+                })
+            end)
+        end)
+    end
+end
+
+if player.Character then setupCharacter(player.Character) end
+player.CharacterAdded:Connect(function(char)
+    setupCharacter(char)
+    if FeatureStates.DeathTeleport and lastDeathCFrame then
+        task.spawn(function()
+            local root = char:WaitForChild("HumanoidRootPart", 5)
+            if root then
+                task.wait(0.2)
+                root.CFrame = lastDeathCFrame
+            end
+        end)
+    end
+end)
+
+print("RADXGEM V6 ULTRA PREMIUM loaded!")
