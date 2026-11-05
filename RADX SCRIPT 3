@@ -1,0 +1,107 @@
+-- RADX Invisible FIX V2 | Draggable Purple Neon
+
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+
+if game.CoreGui:FindFirstChild("RADX_Invisible") then
+    game.CoreGui.RADX_Invisible:Destroy()
+end
+
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "RADX_Invisible"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 230, 0, 140)
+main.Position = UDim2.new(0.5, -115, 0.5, -70)
+main.BackgroundColor3 = Color3.fromRGB(25, 10, 40)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(170, 0, 255)
+stroke.Thickness = 2
+
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Text = "RADX INVISIBLE V2"
+title.TextColor3 = Color3.fromRGB(210, 130, 255)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 15
+
+local btn = Instance.new("TextButton", main)
+btn.Size = UDim2.new(0.85, 0, 0, 45)
+btn.Position = UDim2.new(0.075, 0, 0, 50)
+btn.Text = "INVISIBLE: OFF"
+btn.BackgroundColor3 = Color3.fromRGB(130, 0, 210)
+btn.TextColor3 = Color3.new(1,1,1)
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 14
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+local status = Instance.new("TextLabel", main)
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Position = UDim2.new(0, 0, 0, 105)
+status.Text = "Fix: Bisa jalan & bisa OFF"
+status.BackgroundTransparency = 1
+status.TextColor3 = Color3.fromRGB(180,180,180)
+status.Font = Enum.Font.Gotham
+status.TextSize = 12
+
+local invisible = false
+local realChar, realCFrame, fakeChar
+
+btn.MouseButton1Click:Connect(function()
+    if not invisible then
+        invisible = true
+        realChar = lp.Character
+        realCFrame = realChar.HumanoidRootPart.CFrame
+        
+        -- 1. Pindahin asli ke langit
+        realChar.HumanoidRootPart.CFrame = CFrame.new(0, 100000, 0)
+        task.wait(0.3)
+        
+        -- 2. Bikin fake char buat jalan
+        lp.Character.Archivable = true
+        fakeChar = realChar:Clone()
+        fakeChar.Parent = workspace
+        fakeChar.Name = "RADX_Fake"
+        lp.Character = fakeChar
+        workspace.CurrentCamera.CameraSubject = fakeChar.Humanoid
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+        
+        -- 3. Bikin fake char transparan (di layar orang lain jadi invisible total)
+        task.wait(0.2)
+        fakeChar.HumanoidRootPart.CFrame = realCFrame
+        fakeChar.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        
+        btn.Text = "INVISIBLE: ON"
+        btn.BackgroundColor3 = Color3.fromRGB(50, 200, 90)
+        status.Text = "Lu invisible! Bisa jalan sekarang"
+        
+    else
+        -- OFF
+        invisible = false
+        if fakeChar then
+            local cf = fakeChar.HumanoidRootPart.CFrame
+            fakeChar:Destroy()
+            lp.Character = realChar
+            workspace.CurrentCamera.CameraSubject = realChar.Humanoid
+            task.wait(0.2)
+            -- balikin & unfreeze
+            for _, v in pairs(realChar:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Anchored = false
+                end
+            end
+            realChar.HumanoidRootPart.CFrame = cf
+            realChar.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+        btn.Text = "INVISIBLE: OFF"
+        btn.BackgroundColor3 = Color3.fromRGB(130, 0, 210)
+        status.Text = "Balik visible"
+    end
+end)
