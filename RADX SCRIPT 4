@@ -1,0 +1,389 @@
+-- ==================================================
+-- RADX GRAB PLAYER 😈 (V13 Instant Fling & Ground Fix)
+-- ==================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Hapus UI lama jika ada
+if CoreGui:FindFirstChild("RADX_GRAB_UI") then
+   CoreGui["RADX_GRAB_UI"]:Destroy()
+end
+
+-- ScreenGui Utama
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RADX_GRAB_UI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+-- Frame Utama UI (Neo Purple Style)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 240, 0, 160)
+MainFrame.Position = UDim2.new(0.5, -120, 0.4, -80)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 10, 30)
+MainFrame.BorderColor3 = Color3.fromRGB(180, 0, 255)
+MainFrame.BorderSizePixel = 2
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- Header Bar (Tempat Drag / Geser UI)
+local HeaderBar = Instance.new("Frame")
+HeaderBar.Name = "HeaderBar"
+HeaderBar.Size = UDim2.new(1, 0, 0, 38)
+HeaderBar.BackgroundColor3 = Color3.fromRGB(40, 15, 60)
+HeaderBar.BorderSizePixel = 0
+HeaderBar.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.Parent = HeaderBar
+
+-- Judul UI
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "RADX GRAB PLAYER 😈"
+TitleLabel.TextColor3 = Color3.fromRGB(220, 120, 255)
+TitleLabel.TextSize = 15
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.Parent = HeaderBar
+
+-- LOGIKA UI BISA DIGERAKKAN (DRAGGABLE)
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+   local delta = input.Position - dragStart
+   MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+HeaderBar.InputBegan:Connect(function(input)
+   if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+      dragging = true
+      dragStart = input.Position
+      startPos = MainFrame.Position
+      
+      input.Changed:Connect(function()
+         if input.UserInputState == Enum.UserInputState.End then
+            dragging = false
+         end
+      end)
+   end
+end)
+
+HeaderBar.InputChanged:Connect(function(input)
+   if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+      dragInput = input
+   end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+   if input == dragInput and dragging then
+      update(input)
+   end
+end)
+
+-- Tombol Get Tool
+local GetToolButton = Instance.new("TextButton")
+GetToolButton.Size = UDim2.new(0.88, 0, 0, 42)
+GetToolButton.Position = UDim2.new(0.06, 0, 0.32, 0)
+GetToolButton.BackgroundColor3 = Color3.fromRGB(140, 0, 230)
+GetToolButton.Text = "Get Tool: Grab Player"
+GetToolButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetToolButton.TextSize = 14
+GetToolButton.Font = Enum.Font.SourceSansBold
+GetToolButton.Parent = MainFrame
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = GetToolButton
+
+-- Tombol Anti Fling V3
+local AntiFlingButton = Instance.new("TextButton")
+AntiFlingButton.Size = UDim2.new(0.88, 0, 0, 42)
+AntiFlingButton.Position = UDim2.new(0.06, 0, 0.65, 0)
+AntiFlingButton.BackgroundColor3 = Color3.fromRGB(50, 20, 80)
+AntiFlingButton.Text = "Anti Fling V3: OFF"
+AntiFlingButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+AntiFlingButton.TextSize = 14
+AntiFlingButton.Font = Enum.Font.SourceSansBold
+AntiFlingButton.Parent = MainFrame
+
+local AFCorner = Instance.new("UICorner")
+AFCorner.CornerRadius = UDim.new(0, 8)
+AFCorner.Parent = AntiFlingButton
+
+-- ==================================================
+-- LOGIKA FITUR ANTI FLING V3
+-- ==================================================
+local AntiFlingEnabled = false
+
+AntiFlingButton.MouseButton1Click:Connect(function()
+   AntiFlingEnabled = not AntiFlingEnabled
+   if AntiFlingEnabled then
+      AntiFlingButton.Text = "Anti Fling V3: ON"
+      AntiFlingButton.BackgroundColor3 = Color3.fromRGB(160, 0, 255)
+      AntiFlingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+   else
+      AntiFlingButton.Text = "Anti Fling V3: OFF"
+      AntiFlingButton.BackgroundColor3 = Color3.fromRGB(50, 20, 80)
+      AntiFlingButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+   end
+end)
+
+RunService.Stepped:Connect(function()
+   if AntiFlingEnabled then
+      local char = LocalPlayer.Character
+      if char then
+         for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") then
+               part.CanCollide = false
+               if part.Velocity.Magnitude > 100 or part.RotVelocity.Magnitude > 100 then
+                  part.Velocity = Vector3.new(0, 0, 0)
+                  part.RotVelocity = Vector3.new(0, 0, 0)
+               end
+            end
+         end
+      end
+   end
+end)
+
+-- ==================================================
+-- LOGIKA TOOL GRAB PLAYER
+-- ==================================================
+local function GiveGrabTool()
+   if not LocalPlayer.Backpack then return end
+
+   local OldTool = LocalPlayer.Backpack:FindFirstChild("Grab Player") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Grab Player"))
+   if OldTool then OldTool:Destroy() end
+
+   local Tool = Instance.new("Tool")
+   Tool.Name = "Grab Player"
+   Tool.RequiresHandle = false
+   Tool.CanBeDropped = false
+
+   local Cooldown = false
+
+   local function SetTransparency(char, val)
+      for _, p in pairs(char:GetDescendants()) do
+         if p:IsA("BasePart") or p:IsA("Decal") then
+            p.Transparency = val
+         end
+      end
+   end
+
+   local function CreateDeadHealthbar(head, name)
+      local bb = Instance.new("BillboardGui")
+      bb.Name = "RobloxDeadHealthbar"
+      bb.Adornee = head
+      bb.Size = UDim2.new(4, 0, 1.2, 0)
+      bb.StudsOffset = Vector3.new(0, 2, 0)
+      bb.AlwaysOnTop = true
+
+      local nl = Instance.new("TextLabel")
+      nl.Parent = bb
+      nl.Size = UDim2.new(1, 0, 0.4, 0)
+      nl.BackgroundTransparency = 1
+      nl.Text = name
+      nl.TextColor3 = Color3.fromRGB(255, 255, 255)
+      nl.TextScaled = true
+      nl.Font = Enum.Font.SourceSansBold
+
+      local bg = Instance.new("Frame")
+      bg.Parent = bb
+      bg.Position = UDim2.new(0.1, 0, 0.5, 0)
+      bg.Size = UDim2.new(0.8, 0, 0.3, 0)
+      bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+      bg.BorderSizePixel = 1
+
+      local fill = Instance.new("Frame")
+      fill.Parent = bg
+      fill.Size = UDim2.new(0, 0, 1, 0)
+      fill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+      bb.Parent = head
+   end
+
+   local function ApplyToolHoldPose(clone)
+      local hum = clone:FindFirstChildOfClass("Humanoid")
+      if not hum then return end
+      for _, t in pairs(hum:GetPlayingAnimationTracks()) do t:Stop() end
+
+      if hum.RigType == Enum.HumanoidRigType.R6 then
+         local t = clone:FindFirstChild("Torso")
+         if t then
+            if t:FindFirstChild("Right Shoulder") then
+               t["Right Shoulder"].C0 = CFrame.new(1.2, 0.6, -0.5) * CFrame.Angles(math.rad(85), math.rad(-35), math.rad(45))
+            end
+            if t:FindFirstChild("Left Shoulder") then
+               t["Left Shoulder"].C0 = CFrame.new(-1.2, 0.6, -0.5) * CFrame.Angles(math.rad(85), math.rad(35), math.rad(-45))
+            end
+         end
+      else
+         local ru = clone:FindFirstChild("RightUpperArm")
+         local lu = clone:FindFirstChild("LeftUpperArm")
+         local rl = clone:FindFirstChild("RightLowerArm")
+         local ll = clone:FindFirstChild("LeftLowerArm")
+         if ru and ru:FindFirstChild("RightShoulder") then
+            ru.RightShoulder.C0 = CFrame.new(1.1, 0.5, -0.3) * CFrame.Angles(math.rad(75), math.rad(-25), math.rad(30))
+         end
+         if lu and lu:FindFirstChild("LeftShoulder") then
+            lu.LeftShoulder.C0 = CFrame.new(-1.1, 0.5, -0.3) * CFrame.Angles(math.rad(75), math.rad(25), math.rad(-30))
+         end
+         if rl and rl:FindFirstChild("RightElbow") then
+            rl.RightElbow.C0 = CFrame.new(0, -0.2, 0) * CFrame.Angles(math.rad(-60), math.rad(-20), 0)
+         end
+         if ll and ll:FindFirstChild("LeftElbow") then
+            ll.LeftElbow.C0 = CFrame.new(0, -0.2, 0) * CFrame.Angles(math.rad(-60), math.rad(20), 0)
+         end
+      end
+   end
+
+   Tool.Activated:Connect(function()
+      if Cooldown then return end
+
+      local MyChar = LocalPlayer.Character
+      local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+      local MyHum = MyChar and MyChar:FindFirstChildOfClass("Humanoid")
+      if not MyRoot or not MyHum then return end
+
+      local TargetPlayer = nil
+      local ShortestDist = 18
+
+      for _, p in pairs(Players:GetPlayers()) do
+         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
+            if p.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+               local d = (p.Character.HumanoidRootPart.Position - MyRoot.Position).Magnitude
+               if d < ShortestDist then
+                  ShortestDist = d
+                  TargetPlayer = p
+               end
+            end
+         end
+      end
+
+      if not TargetPlayer then return end
+      Cooldown = true
+
+      local TargetChar = TargetPlayer.Character
+      local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+      local TargetHum = TargetChar:FindFirstChildOfClass("Humanoid")
+      
+      -- NAIKKAN POSISI +1.5 STUDS KE ATAS LANTAI (Anti Masuk Tanah)
+      local StartCFrame = MyRoot.CFrame * CFrame.new(0, 1.5, 0)
+
+      -- 1. Self Clone Visual
+      MyChar.Archivable = true
+      local SelfClone = MyChar:Clone()
+      MyChar.Archivable = false
+
+      for _, v in pairs(SelfClone:GetDescendants()) do
+         if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("Tool") then v:Destroy() end
+      end
+
+      SelfClone.Name = "SelfClone_Visual"
+      SelfClone.Parent = workspace
+      SelfClone:SetPrimaryPartCFrame(StartCFrame)
+      ApplyToolHoldPose(SelfClone)
+
+      for _, part in pairs(SelfClone:GetDescendants()) do
+         if part:IsA("BasePart") then
+            part.Anchored = true
+            part.CanCollide = true
+         end
+      end
+
+      Camera.CameraSubject = SelfClone:FindFirstChildOfClass("Humanoid") or SelfClone:FindFirstChild("Head")
+
+      -- 2. Target Clone Visual
+      TargetChar.Archivable = true
+      local TargetClone = TargetChar:Clone()
+      TargetChar.Archivable = false
+
+      for _, v in pairs(TargetClone:GetDescendants()) do
+         if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("Tool") then v:Destroy() end
+      end
+
+      TargetClone.Name = "TargetClone_Dead"
+      TargetClone.Parent = workspace
+
+      local tCloneHum = TargetClone:FindFirstChildOfClass("Humanoid")
+      if tCloneHum then
+         tCloneHum.Health = 0
+         tCloneHum.PlatformStand = true
+         tCloneHum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+      end
+
+      if TargetClone:FindFirstChild("Head") then
+         CreateDeadHealthbar(TargetClone.Head, TargetPlayer.Name)
+      end
+
+      local tCloneRoot = TargetClone:FindFirstChild("HumanoidRootPart") or TargetClone:FindFirstChild("Torso")
+      if tCloneRoot then
+         tCloneRoot.CanCollide = false
+         tCloneRoot.Anchored = true
+         tCloneRoot.CFrame = SelfClone.PrimaryPart.CFrame * CFrame.new(0, 0.2, -1.3) * CFrame.Angles(0, math.rad(180), math.rad(75))
+      end
+
+      -- 3. Invisible Mode Avatar Asli & Target
+      SetTransparency(MyChar, 1)
+      SetTransparency(TargetChar, 1)
+
+      -- 4. POWERFUL HIGH-VELOCITY FLING (Daya Dorong Ekstrem)
+      local FlingLoop
+      local angle = 0
+      FlingLoop = RunService.Heartbeat:Connect(function()
+         if TargetRoot and MyRoot and Cooldown and MyHum.Health > 0 then
+            angle = angle + 90
+            -- Pindahkan posisi fisik tepat melingkari target dengan rotasi masif
+            MyRoot.CFrame = TargetRoot.CFrame * CFrame.Angles(0, math.rad(angle), 0) * CFrame.new(0, 0.2, 0)
+            MyRoot.Velocity = Vector3.new(999999, 999999, 999999)
+            MyRoot.RotVelocity = Vector3.new(999999, 999999, 999999)
+         else
+            FlingLoop:Disconnect()
+         end
+      end)
+
+      local function Cleanup()
+         if FlingLoop then FlingLoop:Disconnect() end
+         if MyHum and MyHum.Parent then Camera.CameraSubject = MyHum end
+         if SelfClone and SelfClone.PrimaryPart and MyRoot then
+            MyRoot.CFrame = SelfClone.PrimaryPart.CFrame
+            MyRoot.Velocity = Vector3.new(0,0,0)
+            MyRoot.RotVelocity = Vector3.new(0,0,0)
+         end
+
+         SetTransparency(MyChar, 0)
+
+         if SelfClone then SelfClone:Destroy() end
+         if TargetClone then TargetClone:Destroy() end
+         Cooldown = false
+      end
+
+      if TargetHum then
+         local conn
+         conn = TargetHum.Died:Connect(function()
+            conn:Disconnect()
+            Cleanup()
+         end)
+      end
+
+      task.delay(5, function()
+         if Cooldown then Cleanup() end
+      end)
+   end)
+
+   Tool.Parent = LocalPlayer.Backpack
+end
+
+GetToolButton.MouseButton1Click:Connect(function()
+   GiveGrabTool()
+end)
